@@ -25,7 +25,7 @@
 1. Clone o repositório:
 
    ```bash
-   git clone https://github.com/SEU_USUARIO/jogoteca-amiga.git
+   git clone https://github.com/fredy-prudente/jogoteca-amiga.git
    cd jogoteca-amiga
    
 2. Crie e ative um ambiente virtual (opcional, mas recomendado):
