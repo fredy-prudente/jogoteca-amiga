@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <title>Jogoteca Amiga</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Jogoteca Amiga</h1>
+            <p>Acompanhe suas conquistas em jogos</p>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#library">Minha biblioteca</a></li>
+            <li><a href="#all-games">Todos os jogos</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <section id="home">
+            <h2>Bem-vindo ao Jogoteca Amiga</h2>
+            <p>Acompanhe todos os jogos que você completou este ano. Adicione jogos, organize-os em pastas personalizadas e classifique-os por plataforma.</p>
+
+            <div class="search-container">
+                <input type="text" id="game-search" placeholder="Procure um jogo...">
+                <div class="search-results" id="search-results"></div>
+                <div id="loading-message" style="display: none;">Carregando...</div>
+            </div>
+        </section>
+    </main>
+    <script>
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        const cache = {};
+
+        async function fetchGames(query) {
+            const resultsContainer = document.getElementById('search-results');
+            const loadingMessage = document.getElementById('loading-message');
+
+            if (query.length < 3) {
+                resultsContainer.style.display = 'none';
+                loadingMessage.style.display = 'none';
+                return;
+            }
+
+            if (cache[query]) {
+                displayResults(cache[query]);
+                return;
+            }
+
+            loadingMessage.style.display = 'block';
+
+            const response = await fetch(`/games/${query}`);
+            if (!response.ok) {
+                console.error("Falha ao buscar jogos (fetch)");
+                loadingMessage.style.display = 'none';
+                return;
+            }
+            const games = await response.json();
+            cache[query] = games;
+            displayResults(games);
+            loadingMessage.style.display = 'none';
+        }
+
+        function displayResults(games) {
+            const resultsContainer = document.getElementById('search-results');
+            resultsContainer.innerHTML = '';
+
+            games.forEach(game => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+
+                const img = document.createElement('img');
+                img.src = game.cover_url;
+                img.alt = game.name;
+                img.style.width = '50px';
+                img.style.height = '50px';
+                img.style.marginRight = '10px';
+
+                const text = document.createElement('span');
+                text.textContent = game.name;
+
+                item.appendChild(img);
+                item.appendChild(text);
+
+                item.addEventListener('click', () => {
+                    alert(`Game: ${game.name}`);
+                });
+
+                resultsContainer.appendChild(item);
+            });
+
+            resultsContainer.style.display = 'block';
+        }
+
+        const searchInput = document.getElementById('game-search');
+        searchInput.addEventListener('input', debounce(function() {
+            fetchGames(this.value);
+        }, 300));
+    </script>
+</body>
+</html>
