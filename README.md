@@ -19,3 +19,28 @@
 - **Jinja2**: Motor de templates para renderização de páginas HTML.
 - **HTML/CSS**: Linguagens de marcação e estilo para o frontend.
 - **JavaScript**: Utilizado para interatividade no frontend.
+
+## Como Executar
+
+1. Clone o repositório:
+
+   ```bash
+   git clone https://github.com/SEU_USUARIO/jogoteca-amiga.git
+   cd jogoteca-amiga
+   
+2. Crie e ative um ambiente virtual (opcional, mas recomendado):
+   ```bash
+   pip install -r requirements.txt
+
+4. Configure as credenciais da API no arquivo config.json
+   ```bash
+   {
+    "client_id": "YOUR_CLIENT_ID",
+    "client_secret": "YOUR_CLIENT_SECRET"
+   }
+
+6. Execute a aplicação
+   ```bash
+   uvicorn app.main:app --reload
+
+8. Acesse a aplicação em http://127.0.0.1:8000.
