@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import date
 
 class CompletedGameBase(BaseModel):
+    game_id: int
     game_name: str
     platform: str
     start_date: date
@@ -15,4 +16,4 @@ class CompletedGame(CompletedGameBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True  

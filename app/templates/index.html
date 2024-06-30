@@ -161,69 +161,71 @@
         }
 
         function openModal(game) {
-            const modal = $('#game-modal');
-            const title = document.getElementById('game-title');
-            const cover = document.getElementById('game-cover');
-            const form = document.getElementById('game-form');
-            const platformsContainer = document.getElementById('platforms-container');
+    const modal = $('#game-modal');
+    const title = document.getElementById('game-title');
+    const cover = document.getElementById('game-cover');
+    const form = document.getElementById('game-form');
+    const platformsContainer = document.getElementById('platforms-container');
 
-            title.textContent = game.name;
-            cover.src = game.cover.url || 'https://via.placeholder.com/150';
+    title.textContent = game.name;
+    cover.src = game.cover.url || 'https://via.placeholder.com/150';
 
-            platformsContainer.innerHTML = '';
-            if (game.platforms) {
-                game.platforms.forEach(platform => {
-                    const radio = document.createElement('div');
-                    radio.className = 'form-check';
-                    radio.innerHTML = `
-                        <input class="form-check-input" type="radio" name="platform" value="${platform.name}" id="${platform.name}">
-                        <label class="form-check-label" for="${platform.name}">
-                            ${platform.name}
-                        </label>
-                    `;
-                    platformsContainer.appendChild(radio);
-                });
-            }
+    platformsContainer.innerHTML = '';
+    if (game.platforms) {
+        game.platforms.forEach(platform => {
+            const radio = document.createElement('div');
+            radio.className = 'form-check';
+            radio.innerHTML = `
+                <input class="form-check-input" type="radio" name="platform" value="${platform.name}" id="${platform.name}">
+                <label class="form-check-label" for="${platform.name}">
+                    ${platform.name}
+                </label>
+            `;
+            platformsContainer.appendChild(radio);
+        });
+    }
 
-            modal.modal('show');
+    modal.modal('show');
 
-            form.onsubmit = (event) => {
-                event.preventDefault();
-                registerGame(game.name);
-            };
-        }
+    form.onsubmit = (event) => {
+        event.preventDefault();
+        registerGame(game.id, game.name);  
+    };
+}
 
-        async function registerGame(gameName) {
-            const platformRadio = document.querySelector('#platforms-container input[type="radio"]:checked');
-            const platform = platformRadio ? platformRadio.value : null;
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
-            const rating = document.getElementById('rating').value;
+async function registerGame(gameId, gameName) {  
+    const platformRadio = document.querySelector('#platforms-container input[type="radio"]:checked');
+    const platform = platformRadio ? platformRadio.value : null;
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    const rating = document.getElementById('rating').value;
 
-            const gameData = {
-                game_name: gameName,
-                platform: platform,
-                start_date: startDate,
-                end_date: endDate,
-                rating: rating
-            };
+    const gameData = {
+        game_id: gameId,  
+        game_name: gameName,
+        platform: platform,
+        start_date: startDate,
+        end_date: endDate,
+        rating: rating
+    };
 
-            const response = await fetch('/completed_games/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(gameData)
-            });
+    const response = await fetch('/completed_games/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(gameData)
+    });
 
-            if (response.ok) {
-                console.log('Jogo registrado:', gameData);
-            } else {
-                console.error('Falha ao registrar o jogo:', await response.text());
-            }
+    if (response.ok) {
+        console.log('Jogo registrado:', gameData);
+    } else {
+        console.error('Falha ao registrar o jogo:', await response.text());
+    }
 
-            $('#game-modal').modal('hide');
-        }
+    $('#game-modal').modal('hide');
+}
+
 
         const searchInput = document.getElementById('game-search');
         searchInput.addEventListener('input', debounce(function() {

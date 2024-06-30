@@ -48,6 +48,7 @@ def create_completed_game(game: CompletedGameCreate, db: Session = Depends(get_d
     try:
         logging.info(f"Received game data: {game}")
         db_game = CompletedGame(
+            game_id=game.game_id,  # Adicione esta linha
             game_name=game.game_name,
             platform=game.platform,
             start_date=game.start_date,
