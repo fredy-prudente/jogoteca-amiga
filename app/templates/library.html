@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <title>Minha Biblioteca - Jogoteca Amiga</title>
+</head>
+<body>
+    <header>
+        <div class="container text-center">
+            <h1>Minha Biblioteca</h1>
+            <p>Acompanhe suas conquistas em jogos</p>
+        </div>
+    </header>
+
+    <nav class="nav justify-content-center bg-dark">
+        <a class="nav-link text-white" href="/">Home</a>
+        <a class="nav-link text-white" href="/library">Minha biblioteca</a>
+    </nav>
+
+    <main class="container mt-4">
+        <section id="library">
+            <h2>Minha Biblioteca</h2>
+            <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Foto do Jogo</th>
+                        <th>Data de Início</th>
+                        <th>Nome</th>
+                        <th>Plataforma</th>
+                        <th>Data de Finalização</th>
+                        <th>Nota</th>
+                        <th>Tempo de Finalização (dias)</th>
+                    </tr>
+                </thead>
+                <tbody id="library-table-body">
+                    <!-- Linhas de jogos serão inseridas aqui -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        async function fetchLibrary() {
+            const response = await fetch('/completed_games/');
+            if (!response.ok) {
+                console.error("Falha ao buscar jogos da biblioteca");
+                return;
+            }
+            const games = await response.json();
+            displayLibrary(games);
+        }
+
+        function displayLibrary(games) {
+            const tableBody = document.getElementById('library-table-body');
+            tableBody.innerHTML = '';
+            games.forEach(game => {
+                const row = document.createElement('tr');
+                const startDate = new Date(game.start_date);
+                const endDate = new Date(game.end_date);
+                const timeToComplete = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                row.innerHTML = `
+                    <td><img src="${game.cover_url}" alt="${game.game_name}" style="width: 50px; height: 50px;"></td>
+                    <td>${game.start_date}</td>
+                    <td>${game.game_name}</td>
+                    <td>${game.platform}</td>
+                    <td>${game.end_date}</td>
+                    <td>${game.rating}</td>
+                    <td>${timeToComplete}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchLibrary);
+    </script>
+</body>
+</html>

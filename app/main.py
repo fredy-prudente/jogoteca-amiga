@@ -20,3 +20,7 @@ templates = Jinja2Templates(directory="app/templates")
 @app.get("/")
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "message": "Welcome to the Game Library API"})
+
+@app.get("/library")
+def read_library(request: Request):
+    return templates.TemplateResponse("library.html", {"request": request})
