@@ -94,3 +94,13 @@ nav ul li a:hover {
 .search-result-item:hover {
     background-color: #f0f0f0;
 }
+
+.modal-body {
+    display: flex;
+}
+
+.modal-body img {
+    max-width: 150px;
+    max-height: 150px;
+    margin-right: 20px;
+}

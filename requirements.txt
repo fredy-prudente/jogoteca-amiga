@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+sqlalchemy
+pydantic
 requests
-python-dotenv
 jinja2

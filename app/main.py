@@ -2,12 +2,18 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
-from app.routers import games
+from .database import init_db
+from .routers import games
 
 app = FastAPI()
 
+# Initialize the database
+init_db()
+
+# Include routers
 app.include_router(games.router)
 
+# Serve static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/index.css">
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <title>Jogoteca Amiga</title>
@@ -16,10 +17,10 @@
     </header>
 
     <nav>
-        <ul>
-            <li><a href="#home">Home</a></li>
-            <li><a href="#library">Minha biblioteca</a></li>
-            <li><a href="#all-games">Todos os jogos</a></li>
+        <ul class="nav justify-content-center">
+            <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="#library">Minha biblioteca</a></li>
+            <li class="nav-item"><a class="nav-link" href="#all-games">Todos os jogos</a></li>
         </ul>
     </nav>
 
@@ -29,12 +30,54 @@
             <p>Acompanhe todos os jogos que você completou este ano. Adicione jogos, organize-os em pastas personalizadas e classifique-os por plataforma.</p>
 
             <div class="search-container">
-                <input type="text" id="game-search" placeholder="Procure um jogo...">
+                <input type="text" id="game-search" class="form-control" placeholder="Procure um jogo...">
                 <div class="search-results" id="search-results"></div>
                 <div id="loading-message" style="display: none;">Carregando...</div>
             </div>
         </section>
     </main>
+
+    <!-- Modal -->
+    <div class="modal fade" id="game-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="game-title"></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body d-flex">
+                    <img id="game-cover" src="" alt="Capa do jogo" class="mr-3" style="width: 150px; height: 150px;">
+                    <div>
+                        <form id="game-form">
+                            <div class="form-group">
+                                <label for="platform">Plataforma:</label>
+                                <div id="platforms-container"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="start-date">Data de início:</label>
+                                <input type="date" id="start-date" name="start-date" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="end-date">Data de término:</label>
+                                <input type="date" id="end-date" name="end-date" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="rating">Nota:</label>
+                                <input type="number" id="rating" name="rating" class="form-control" min="0" max="10" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Registrar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         function debounce(func, wait) {
             let timeout;
@@ -66,7 +109,7 @@
 
             const response = await fetch(`/games/${query}`);
             if (!response.ok) {
-                console.error("Falha ao buscar jogos (fetch)");
+                console.error("Falha ao buscar jogos");
                 loadingMessage.style.display = 'none';
                 return;
             }
@@ -85,7 +128,7 @@
                 item.className = 'search-result-item';
 
                 const img = document.createElement('img');
-                img.src = game.cover_url;
+                img.src = game.cover_url || 'https://via.placeholder.com/50';
                 img.alt = game.name;
                 img.style.width = '50px';
                 img.style.height = '50px';
@@ -98,13 +141,88 @@
                 item.appendChild(text);
 
                 item.addEventListener('click', () => {
-                    alert(`Game: ${game.name}`);
+                    fetchGameDetails(game.id);
                 });
 
                 resultsContainer.appendChild(item);
             });
 
             resultsContainer.style.display = 'block';
+        }
+
+        async function fetchGameDetails(gameId) {
+            const response = await fetch(`/game_details/${gameId}`);
+            if (!response.ok) {
+                console.error("Falha ao buscar detalhes do jogo");
+                return;
+            }
+            const game = await response.json();
+            openModal(game);
+        }
+
+        function openModal(game) {
+            const modal = $('#game-modal');
+            const title = document.getElementById('game-title');
+            const cover = document.getElementById('game-cover');
+            const form = document.getElementById('game-form');
+            const platformsContainer = document.getElementById('platforms-container');
+
+            title.textContent = game.name;
+            cover.src = game.cover.url || 'https://via.placeholder.com/150';
+
+            platformsContainer.innerHTML = '';
+            if (game.platforms) {
+                game.platforms.forEach(platform => {
+                    const radio = document.createElement('div');
+                    radio.className = 'form-check';
+                    radio.innerHTML = `
+                        <input class="form-check-input" type="radio" name="platform" value="${platform.name}" id="${platform.name}">
+                        <label class="form-check-label" for="${platform.name}">
+                            ${platform.name}
+                        </label>
+                    `;
+                    platformsContainer.appendChild(radio);
+                });
+            }
+
+            modal.modal('show');
+
+            form.onsubmit = (event) => {
+                event.preventDefault();
+                registerGame(game.name);
+            };
+        }
+
+        async function registerGame(gameName) {
+            const platformRadio = document.querySelector('#platforms-container input[type="radio"]:checked');
+            const platform = platformRadio ? platformRadio.value : null;
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const rating = document.getElementById('rating').value;
+
+            const gameData = {
+                game_name: gameName,
+                platform: platform,
+                start_date: startDate,
+                end_date: endDate,
+                rating: rating
+            };
+
+            const response = await fetch('/completed_games/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gameData)
+            });
+
+            if (response.ok) {
+                console.log('Jogo registrado:', gameData);
+            } else {
+                console.error('Falha ao registrar o jogo:', await response.text());
+            }
+
+            $('#game-modal').modal('hide');
         }
 
         const searchInput = document.getElementById('game-search');
