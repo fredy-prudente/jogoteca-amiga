@@ -17,7 +17,7 @@
     </header>
 
     <nav class="nav justify-content-center bg-dark">
-        <a class="nav-link text-white" href="#home">Home</a>
+        <a class="nav-link text-white" href="/">Home</a>
         <a class="nav-link text-white" href="/library">Minha biblioteca</a>
         <a class="nav-link text-white" href="#all-games">Todos os jogos</a>
     </nav>
@@ -54,16 +54,24 @@
                                 <div id="platforms-container"></div>
                             </div>
                             <div class="form-group">
+                                <label for="status">Status:</label>
+                                <select id="status" name="status" class="form-control" required>
+                                    <option value="completed">Concluído</option>
+                                    <option value="playing">Jogando</option>
+                                    <option value="planned">Planejado</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="start-date-group">
                                 <label for="start-date">Data de início:</label>
-                                <input type="date" id="start-date" name="start-date" class="form-control" required>
+                                <input type="date" id="start-date" name="start-date" class="form-control">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="end-date-group">
                                 <label for="end-date">Data de término:</label>
-                                <input type="date" id="end-date" name="end-date" class="form-control" required>
+                                <input type="date" id="end-date" name="end-date" class="form-control">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group" id="rating-group">
                                 <label for="rating">Nota:</label>
-                                <input type="number" id="rating" name="rating" class="form-control" min="0" max="10" required>
+                                <input type="number" id="rating" name="rating" class="form-control" min="0" max="10">
                             </div>
                             <button type="submit" class="btn btn-primary">Registrar</button>
                         </form>
@@ -139,7 +147,7 @@
                 item.appendChild(text);
 
                 item.addEventListener('click', () => {
-                    fetchGameDetails(game.id);
+                    fetchGameDetails(game.id, game.cover_url);
                 });
 
                 resultsContainer.appendChild(item);
@@ -148,13 +156,14 @@
             resultsContainer.style.display = 'block';
         }
 
-        async function fetchGameDetails(gameId) {
+        async function fetchGameDetails(gameId, coverUrl) {
             const response = await fetch(`/game_details/${gameId}`);
             if (!response.ok) {
                 console.error("Falha ao buscar detalhes do jogo");
                 return;
             }
             const game = await response.json();
+            game.cover_url = coverUrl;  // Ensure cover URL is passed along
             openModal(game);
         }
 
@@ -164,6 +173,9 @@
             const cover = document.getElementById('game-cover');
             const form = document.getElementById('game-form');
             const platformsContainer = document.getElementById('platforms-container');
+            const startDateGroup = document.getElementById('start-date-group');
+            const endDateGroup = document.getElementById('end-date-group');
+            const ratingGroup = document.getElementById('rating-group');
 
             title.textContent = game.name;
             cover.src = game.cover.url || 'https://via.placeholder.com/150';
@@ -185,42 +197,87 @@
 
             modal.modal('show');
 
-            form.onsubmit = (event) => {
+            document.getElementById('status').addEventListener('change', function () {
+                if (this.value === 'completed') {
+                    startDateGroup.style.display = 'block';
+                    endDateGroup.style.display = 'block';
+                    ratingGroup.style.display = 'block';
+                } else if (this.value === 'playing') {
+                    startDateGroup.style.display = 'block';
+                    endDateGroup.style.display = 'none';
+                    ratingGroup.style.display = 'none';
+                } else {
+                    startDateGroup.style.display = 'none';
+                    endDateGroup.style.display = 'none';
+                    ratingGroup.style.display = 'none';
+                }
+            });
+
+            form.onsubmit = async (event) => {
                 event.preventDefault();
-                registerGame(game.id, game.name);
+                await registerGame(game.id, game.name, game.cover_url);
             };
         }
 
-        async function registerGame(gameId, gameName) {
+        async function registerGame(gameId, gameName, coverUrl) {
             const platformRadio = document.querySelector('#platforms-container input[type="radio"]:checked');
             const platform = platformRadio ? platformRadio.value : null;
+            const status = document.getElementById('status').value;
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
             const rating = document.getElementById('rating').value;
 
-            const gameData = {
-                game_id: gameId,
-                game_name: gameName,
-                platform: platform,
-                start_date: startDate,
-                end_date: endDate,
-                rating: rating
-            };
+            let gameData;
 
-            const response = await fetch('/completed_games/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(gameData)
-            });
-
-            if (response.ok) {
-                console.log('Jogo registrado:', gameData);
+            if (status === 'completed') {
+                gameData = {
+                    game_id: gameId,
+                    game_name: gameName,
+                    platform: platform,
+                    start_date: startDate,
+                    end_date: endDate,
+                    rating: rating,
+                    cover_url: coverUrl
+                };
+                await fetch('/completed_games/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(gameData)
+                });
+            } else if (status === 'playing') {
+                gameData = {
+                    game_id: gameId,
+                    game_name: gameName,
+                    platform: platform,
+                    start_date: startDate,
+                    cover_url: coverUrl
+                };
+                await fetch('/playing_games/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(gameData)
+                });
             } else {
-                console.error('Falha ao registrar o jogo:', await response.text());
+                gameData = {
+                    game_id: gameId,
+                    game_name: gameName,
+                    platform: platform,
+                    cover_url: coverUrl
+                };
+                await fetch('/planned_games/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(gameData)
+                });
             }
 
+            console.log('Jogo registrado:', gameData);
             $('#game-modal').modal('hide');
         }
 

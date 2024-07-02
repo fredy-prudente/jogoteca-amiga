@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="/static/css/index.css">
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <title>Minha Biblioteca - Jogoteca Amiga</title>
+    <style>
+        .tag-concluido {
+            background-color: #28a745;
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .tag-jogando {
+            background-color: #ffc107;
+            color: black;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .tag-planejado {
+            background-color: #6c757d;
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -27,6 +47,7 @@
             <table class="table table-striped table-bordered">
                 <thead class="thead-dark">
                     <tr>
+                        <th>Status</th>
                         <th>Foto do Jogo</th>
                         <th>Data de Início</th>
                         <th>Nome</th>
@@ -48,7 +69,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         async function fetchLibrary() {
-            const response = await fetch('/completed_games/');
+            const response = await fetch('/library_games/');
             if (!response.ok) {
                 console.error("Falha ao buscar jogos da biblioteca");
                 return;
@@ -60,22 +81,35 @@
         function displayLibrary(games) {
             const tableBody = document.getElementById('library-table-body');
             tableBody.innerHTML = '';
-            games.forEach(game => {
+
+            // Função para criar uma linha da tabela
+            const createRow = (game, statusTag) => {
                 const row = document.createElement('tr');
                 const startDate = new Date(game.start_date);
-                const endDate = new Date(game.end_date);
-                const timeToComplete = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                const endDate = game.end_date ? new Date(game.end_date) : null;
+                const timeToComplete = endDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) : '';
+
                 row.innerHTML = `
+                    <td><span class="tag-${statusTag}">${statusTag.charAt(0).toUpperCase() + statusTag.slice(1)}</span></td>
                     <td><img src="${game.cover_url}" alt="${game.game_name}" style="width: 50px; height: 50px;"></td>
-                    <td>${game.start_date}</td>
+                    <td>${game.start_date || ''}</td>
                     <td>${game.game_name}</td>
-                    <td>${game.platform}</td>
-                    <td>${game.end_date}</td>
-                    <td>${game.rating}</td>
+                    <td>${game.platform || ''}</td>
+                    <td>${game.end_date || ''}</td>
+                    <td>${game.rating !== undefined ? game.rating : ''}</td>
                     <td>${timeToComplete}</td>
                 `;
                 tableBody.appendChild(row);
-            });
+            };
+
+            
+            games.completed_games.forEach(game => createRow(game, 'concluido'));
+
+            
+            games.playing_games.forEach(game => createRow(game, 'jogando'));
+
+            
+            games.planned_games.forEach(game => createRow(game, 'planejado'));
         }
 
         document.addEventListener('DOMContentLoaded', fetchLibrary);

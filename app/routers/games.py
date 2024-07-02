@@ -1,15 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import SessionLocal, init_db
-from ..models import CompletedGame
-from ..schemas import CompletedGameCreate, CompletedGame as CompletedGameSchema
+from ..models import CompletedGame, PlayingGame, PlannedGame
+from ..schemas import CompletedGame as CompletedGameSchema, PlayingGame as PlayingGameSchema, PlannedGame as PlannedGameSchema, CompletedGameCreate, PlayingGameCreate, PlannedGameCreate
 from ..utils.igdb import search_games, get_game_details
 import logging
 
 logging.basicConfig(level=logging.INFO)
 router = APIRouter()
 
-# Dependency to get DB session
 def get_db():
     db = SessionLocal()
     try:
@@ -22,7 +21,7 @@ async def get_games(query: str):
     try:
         games = await search_games(query)
         results = []
-        for game in games[:5]:  # Limit to 5 games
+        for game in games[:5]:
             game_info = {
                 "id": game.get("id"),
                 "name": game.get("name"),
@@ -43,33 +42,53 @@ async def get_game_details_route(game_id: int):
         logging.error(f"Error fetching game details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/completed_games/", response_model=CompletedGameSchema)
+@router.get("/library_games/")
+def get_library_games(db: Session = Depends(get_db)):
+    try:
+        completed_games = db.query(CompletedGame).all()
+        playing_games = db.query(PlayingGame).all()
+        planned_games = db.query(PlannedGame).all()
+        return {
+            "completed_games": completed_games,
+            "playing_games": playing_games,
+            "planned_games": planned_games
+        }
+    except Exception as e:
+        logging.error(f"Error fetching library games: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/completed_games/")
 def create_completed_game(game: CompletedGameCreate, db: Session = Depends(get_db)):
     try:
-        logging.info(f"Received game data: {game}")
-        db_game = CompletedGame(
-            game_id=game.game_id,  # Adicione esta linha
-            game_name=game.game_name,
-            platform=game.platform,
-            start_date=game.start_date,
-            end_date=game.end_date,
-            rating=game.rating
-        )
+        db_game = CompletedGame(**game.dict())
         db.add(db_game)
         db.commit()
         db.refresh(db_game)
-        logging.info(f"Game saved with ID: {db_game.id}")
         return db_game
     except Exception as e:
-        logging.error(f"Error saving game: {e}")
+        logging.error(f"Error creating completed game: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/completed_games/", response_model=list[CompletedGameSchema])
-def read_completed_games(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+@router.post("/playing_games/")
+def create_playing_game(game: PlayingGameCreate, db: Session = Depends(get_db)):
     try:
-        games = db.query(CompletedGame).offset(skip).limit(limit).all()
-        logging.info(f"Retrieved games: {games}")
-        return games
+        db_game = PlayingGame(**game.dict())
+        db.add(db_game)
+        db.commit()
+        db.refresh(db_game)
+        return db_game
     except Exception as e:
-        logging.error(f"Error reading completed games: {e}")
+        logging.error(f"Error creating playing game: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/planned_games/")
+def create_planned_game(game: PlannedGameCreate, db: Session = Depends(get_db)):
+    try:
+        db_game = PlannedGame(**game.dict())
+        db.add(db_game)
+        db.commit()
+        db.refresh(db_game)
+        return db_game
+    except Exception as e:
+        logging.error(f"Error creating planned game: {e}")
         raise HTTPException(status_code=500, detail=str(e))
